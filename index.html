@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zoho Floor Hours & Punch Resolver</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center space-x-3">
+        <div class="h-9 w-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-5 h-5 text-slate-950" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+            Zoho Punch Resolver
+            <span class="text-[11px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded-full">Floor Tracker</span>
+          </h1>
+          <p class="text-xs text-slate-400">Fix 0-minute mirrored taps & calculate real time</p>
+        </div>
+      </div>
+
+      <!-- Main Navigation Tabs: Floor Tracker vs Average Tracker -->
+      <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+        <button id="navTabFloor" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-500 text-slate-950 shadow-sm flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Floor Tracker
+        </button>
+        <button id="navTabAvg" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          Average Tracker
+        </button>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="flex items-center gap-2">
+        <button id="btnLoadSample" class="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition border border-slate-700/60 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Load Your 4-Punch Sample
+        </button>
+        <button id="btnClearAll" class="text-xs px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 font-medium transition border border-rose-500/30">
+          Clear
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Container for Section 1: Daily Floor Tracker -->
+  <div id="sectionFloorTracker">
+    <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Inputs & Settings (5 Cols) -->
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        <!-- Input Mode Switcher & Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Punch Data Input</span>
+            <div class="flex bg-slate-950 p-1 rounded-lg border border-slate-800 text-xs">
+              <button id="tabPaste" class="px-3 py-1 rounded-md font-medium transition bg-slate-800 text-white shadow-sm">Quick Paste</button>
+              <button id="tabManual" class="px-3 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200">Interactive List</button>
+            </div>
+          </div>
+
+          <!-- View 1: Quick Paste -->
+          <div id="viewPaste" class="space-y-3">
+            <div class="relative">
+              <textarea id="rawText" rows="7" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition resize-none leading-relaxed" placeholder="Paste timestamps here, e.g.:
+12:30 PM
+12:36 PM
+12:42 PM
+02:11 PM
+
+(Or paste Zoho raw lines with tabs/spaces; duplicates are cleaned automatically)"></textarea>
+            </div>
+            <p class="text-[11px] text-slate-500 leading-normal">
+              💡 <strong class="text-slate-400">Pro tip:</strong> Paste directly from Zoho web or app. You can include duplicates like <code class="text-slate-400 bg-slate-800 px-1 py-0.5 rounded">12:30 PM - 12:30 PM</code>; it will automatically extract unique chronologic punches.
+            </p>
+          </div>
+
+          <!-- View 2: Manual Row List -->
+          <div id="viewManual" class="space-y-3 hidden">
+            <div id="punchRowsContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+              <!-- Dynamic Punch Rows -->
+            </div>
+            <button id="btnAddManualRow" class="w-full py-2 bg-slate-800/80 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-slate-600 rounded-xl text-xs font-medium text-slate-300 transition flex items-center justify-center gap-1.5">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Add New Punch Timestamp
+            </button>
+          </div>
+        </div>
+
+        <!-- Interpretation Rules Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Interpretation Rules
+            </h3>
+            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Active</span>
+          </div>
+
+          <!-- Rule 1: First Punch Meaning -->
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-2">What did your 1st punch represent?</label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="btnFirstIn" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-emerald-500/15 border-emerald-500/50 text-emerald-300 shadow-sm">
+                <span class="flex items-center justify-between">
+                  Entering Floor
+                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                </span>
+                <span class="text-[10px] font-normal text-slate-400 mt-1">First interval = ON FLOOR</span>
+              </button>
+              <button id="btnFirstOut" type="button" class="px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300 hover:border-slate-700">
+                <span class="flex items-center justify-between">
+                  Leaving Floor
+                  <span class="w-2 h-2 rounded-full bg-rose-400"></span>
+                </span>
+                <span class="text-[10px] font-normal text-slate-400 mt-1">First interval = BREAK/OUT</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Rule 2: Lunch Time Deduction (in mins) -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="block text-xs font-medium text-slate-300">Lunch Break Time (Deducted from Out)</label>
+              <span class="text-[10px] text-slate-500 font-mono">Deducted from Total Out</span>
+            </div>
+            <div class="relative">
+              <input type="number" id="inputLunchMinutes" min="0" max="300" step="5" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition">
+              <span class="absolute right-3 top-2.5 text-[11px] text-slate-500 font-medium">mins</span>
+            </div>
+            <!-- Quick Lunch Preset Chips -->
+            <div class="flex items-center gap-1.5 mt-2">
+              <span class="text-[11px] text-slate-500">Quick set:</span>
+              <button type="button" class="btn-preset-lunch px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-mins="0">0m</button>
+              <button type="button" class="btn-preset-lunch px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-mins="30">30m</button>
+              <button type="button" class="btn-preset-lunch px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-mins="45">45m</button>
+              <button type="button" class="btn-preset-lunch px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-mins="60">60m</button>
+            </div>
+          </div>
+
+          <!-- Rule 3: Auto-Deduplicate Double Taps -->
+          <div class="flex items-center justify-between pt-1">
+            <div class="space-y-0.5 pr-2">
+              <label for="dedupToggle" class="text-xs font-medium text-slate-300 cursor-pointer">Auto-clean Sensor Bounce</label>
+              <p class="text-[11px] text-slate-500 leading-snug">Discards scans within 1 min of each other (Zoho double-taps)</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="dedupToggle" class="sr-only peer" checked>
+              <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Results & Analysis (7 Cols) -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+        <!-- Top Stats Banner: Range & Total Elapsed Span -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 shadow-xl flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Total Span of Day</div>
+              <div id="statSpanRange" class="text-xs font-mono font-medium text-slate-200">-- to --</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-4">
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Total Duration</div>
+              <div id="statTotalSpan" class="text-sm font-mono font-bold text-white">0h 0m</div>
+            </div>
+            <div class="h-7 w-[1px] bg-slate-800"></div>
+            <div class="text-right">
+              <div class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Punches</div>
+              <div id="statPunchCount" class="text-sm font-mono font-bold text-emerald-400">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards for Floor vs Break & Lunch -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <!-- Floor Time -->
+          <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl"></div>
+            <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">Time on Floor</span>
+            <div id="statFloorTime" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0h 0m</div>
+            <span id="statFloorSub" class="text-[10px] text-emerald-400/80 mt-0.5 block">0 minutes total</span>
+          </div>
+
+          <!-- Total Gross Out -->
+          <div class="bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-rose-500/10 rounded-full blur-xl"></div>
+            <span class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider block">Gross Out Time</span>
+            <div id="statOutTime" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0h 0m</div>
+            <span id="statOutSub" class="text-[10px] text-rose-400/80 mt-0.5 block">0m gross out</span>
+          </div>
+
+          <!-- Lunch Deducted -->
+          <div class="bg-gradient-to-br from-amber-950/40 via-slate-900 to-slate-900 border border-amber-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-amber-500/10 rounded-full blur-xl"></div>
+            <span class="text-[11px] font-semibold text-amber-400 uppercase tracking-wider block">Lunch Deducted</span>
+            <div id="statLunchTime" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0m</div>
+            <span id="statLunchSub" class="text-[10px] text-amber-400/80 mt-0.5 block">Meal allowance</span>
+          </div>
+
+          <!-- Net Out (Non-Lunch Breaks) -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Net Other Out</span>
+            <div id="statNetOutTime" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0h 0m</div>
+            <span id="statNetOutSub" class="text-[10px] text-slate-500 mt-0.5 block">Excl. lunch</span>
+          </div>
+        </div>
+
+        <!-- Ratio Progress Bar -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> Floor: <strong id="ratioFloorText" class="text-white">0%</strong>
+            </span>
+            <span class="text-slate-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm bg-rose-500"></span> Out: <strong id="ratioOutText" class="text-white">0%</strong>
+            </span>
+          </div>
+          <div class="h-3 w-full bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+            <div id="barFloor" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+            <div id="barOut" class="h-full bg-rose-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Intervals Breakdown Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                Interval Timeline
+                <span id="intervalsBadge" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0 intervals</span>
+              </h3>
+              <p class="text-xs text-slate-500">Sequenced breakdown between consecutive punches</p>
+            </div>
+            <button id="btnCopyReport" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 active:scale-95">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              <span id="copyBtnText">Copy for Zoho Regularization</span>
+            </button>
+          </div>
+
+          <div class="mt-3 overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="text-[11px] font-semibold text-slate-400 uppercase border-b border-slate-800/80 pb-2">
+                  <th class="py-2 px-2">#</th>
+                  <th class="py-2 px-2">Time Interval</th>
+                  <th class="py-2 px-2">Status</th>
+                  <th class="py-2 px-2 text-right">Duration</th>
+                </tr>
+              </thead>
+              <tbody id="intervalsTableBody" class="divide-y divide-slate-800/50">
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-slate-500 italic">
+                    Paste or add punch timestamps to calculate intervals.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Container for Section 2: Average Tracker -->
+  <div id="sectionAvgTracker" class="hidden">
+    <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- Left Column: Settings & Days Input (5 Cols) -->
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        <!-- Target Settings Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Daily Average Target
+            </h3>
+            <span class="text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Benchmark</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1.5">Required Floor Hours per Day</label>
+            <div class="grid grid-cols-2 gap-2">
+              <div class="relative">
+                <input type="number" id="inputTargetHours" min="0" max="24" step="1" value="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition">
+                <span class="absolute right-3 top-2.5 text-[11px] text-slate-500 font-medium">hours</span>
+              </div>
+              <div class="relative">
+                <input type="number" id="inputTargetMinutes" min="0" max="59" step="5" value="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition">
+                <span class="absolute right-3 top-2.5 text-[11px] text-slate-500 font-medium">mins</span>
+              </div>
+            </div>
+
+            <!-- Quick Preset Chips -->
+            <div class="flex items-center gap-1.5 mt-2.5">
+              <span class="text-[11px] text-slate-500">Presets:</span>
+              <button type="button" class="btn-preset-target px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-h="7" data-m="30">7h 30m</button>
+              <button type="button" class="btn-preset-target px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition active:scale-95" data-h="8" data-m="0">8h 00m</button>
+              <button type="button" class="btn-preset-target px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-h="8" data-m="30">8h 30m</button>
+              <button type="button" class="btn-preset-target px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-mono text-slate-300 border border-slate-700/60 transition" data-h="9" data-m="0">9h 00m</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Days Input Card -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Daily Floor Log Entry</span>
+            <div class="flex items-center gap-1.5">
+              <button id="btnLoadAvgSample" class="text-[11px] px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-medium border border-slate-700/60 transition">
+                Load 3-Day Sample
+              </button>
+            </div>
+          </div>
+
+          <div class="relative">
+            <textarea id="rawDaysText" rows="8" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs font-mono text-slate-200 placeholder-slate-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 transition resize-none leading-relaxed" placeholder="Paste days, one per line (up to 365 days):
+Day 1: 7h 21m
+Day 2: 8h
+Day 3: 5h 35m
+
+(Accepts formats like '7h 21m', '8h', '08:00', '7.5h', or '5 hr 35 min')"></textarea>
+          </div>
+
+          <div class="p-3 rounded-xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1">
+            <div class="flex items-center gap-1.5 text-slate-300 font-medium">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Supported Formats
+            </div>
+            <p class="text-slate-500 leading-normal">
+              You can paste simple notations: <code class="text-slate-300">7h 21m</code>, <code class="text-slate-300">8h</code>, <code class="text-slate-300">5:35</code>, <code class="text-slate-300">6.5h</code>, or lines from reports like <code class="text-slate-300">Day 1 - 7h 21m</code>. Duplicates and lines are automatically parsed.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Average Analytics & Breakdown (7 cols) -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+
+        <!-- Top Banner: Days Count & Cumulative Stats -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 shadow-xl flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/20 flex items-center justify-center text-teal-400">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <div class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Logged Days Count</div>
+              <div id="statAvgDaysCount" class="text-xs font-mono font-medium text-slate-200">0 days logged</div>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Total Cumulative Floor Hours</div>
+            <div id="statAvgTotalHours" class="text-sm font-mono font-bold text-white">0h 0m</div>
+          </div>
+        </div>
+
+        <!-- 4 KPI Cards for Average Analysis -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <!-- Actual Average -->
+          <div class="bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-emerald-500/10 rounded-full blur-xl"></div>
+            <span class="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block">Your Avg / Day</span>
+            <div id="statActualAvg" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0h 0m</div>
+            <span id="statActualAvgSub" class="text-[10px] text-emerald-400/80 mt-0.5 block">0 mins/day</span>
+          </div>
+
+          <!-- Required Target -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5">
+            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Target Avg</span>
+            <div id="statTargetDisplay" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">8h 0m</div>
+            <span class="text-[10px] text-slate-500 mt-0.5 block">Required quota</span>
+          </div>
+
+          <!-- Difference / Gap (Shortfall or Surplus) -->
+          <div id="cardGapStatus" class="bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-rose-500/10 rounded-full blur-xl"></div>
+            <span id="lblGapTitle" class="text-[11px] font-semibold text-rose-400 uppercase tracking-wider block">Hours Short</span>
+            <div id="statGapHours" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">0h 0m</div>
+            <span id="statGapSub" class="text-[10px] text-rose-400/80 mt-0.5 block">Cumulative deficit</span>
+          </div>
+
+          <!-- Target Required for Next Day -->
+          <div class="bg-gradient-to-br from-indigo-950/40 via-slate-900 to-slate-900 border border-indigo-500/30 rounded-2xl p-3.5 relative overflow-hidden">
+            <div class="absolute -right-2 -bottom-2 w-16 h-16 bg-indigo-500/10 rounded-full blur-xl"></div>
+            <span class="text-[11px] font-semibold text-indigo-400 uppercase tracking-wider block">Next Day Goal</span>
+            <div id="statNextDayNeed" class="text-xl sm:text-2xl font-extrabold text-white font-mono mt-1">--</div>
+            <span id="statNextDaySub" class="text-[10px] text-indigo-400/80 mt-0.5 block">To hit target average</span>
+          </div>
+        </div>
+
+        <!-- Progress to Target Average -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-2">
+          <div class="flex justify-between items-center text-xs">
+            <span class="text-slate-400 flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-sm bg-emerald-500"></span> Achievement Rate: <strong id="statAvgPctText" class="text-white">0%</strong>
+            </span>
+            <span id="statStatusBadge" class="text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-800 text-slate-400 border border-slate-700">
+              No data
+            </span>
+          </div>
+          <div class="h-3 w-full bg-slate-950 rounded-full overflow-hidden flex border border-slate-800">
+            <div id="barAvgProgress" class="h-full bg-emerald-500 transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <!-- Daily Breakdown Table -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col">
+          <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div>
+              <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                Daily Performance Log
+                <span id="badgeDaysLogged" class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0 days</span>
+              </h3>
+              <p class="text-xs text-slate-500">Day-by-day comparison against your daily target</p>
+            </div>
+            <button id="btnCopyAvgReport" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/80 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 active:scale-95">
+              <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+              </svg>
+              <span id="copyAvgBtnText">Copy Average Summary</span>
+            </button>
+          </div>
+
+          <div class="mt-3 overflow-x-auto flex-1">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="text-[11px] font-semibold text-slate-400 uppercase border-b border-slate-800/80 pb-2">
+                  <th class="py-2 px-2">Day #</th>
+                  <th class="py-2 px-2">Floor Time</th>
+                  <th class="py-2 px-2">Performance vs Target</th>
+                  <th class="py-2 px-2 text-right">Variance</th>
+                </tr>
+              </thead>
+              <tbody id="avgTableBody" class="divide-y divide-slate-800/50">
+                <tr>
+                  <td colspan="4" class="py-8 text-center text-slate-500 italic">
+                    Paste daily hours on the left to calculate your average.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- Notification Banner (Custom, no alerts) -->
+  <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-2xl flex items-center gap-2">
+    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+    </svg>
+    <span id="toastMsg">Action completed</span>
+  </div>
+
+  <footer class="border-t border-slate-900 bg-slate-950 py-3 text-center text-xs text-slate-600">
+    Designed for Zoho People attendance regularization • Processed locally in your browser
+  </footer>
+
+  <!-- Application Logic -->
+  <script>
+    // App State
+    let currentInputMode = 'paste'; // 'paste' | 'manual'
+    let firstPunchType = 'IN';      // 'IN' | 'OUT'
+    let manualPunches = [];         // Array of string times "12:30 PM"
+    let parsedTimes = [];           // Array of parsed minute values with labels
+
+    // DOM Elements
+    const rawText = document.getElementById('rawText');
+    const tabPaste = document.getElementById('tabPaste');
+    const tabManual = document.getElementById('tabManual');
+    const viewPaste = document.getElementById('viewPaste');
+    const viewManual = document.getElementById('viewManual');
+    const punchRowsContainer = document.getElementById('punchRowsContainer');
+    const btnAddManualRow = document.getElementById('btnAddManualRow');
+    const btnFirstIn = document.getElementById('btnFirstIn');
+    const btnFirstOut = document.getElementById('btnFirstOut');
+    const inputLunchMinutes = document.getElementById('inputLunchMinutes');
+    const btnPresetLunchList = document.querySelectorAll('.btn-preset-lunch');
+    const dedupToggle = document.getElementById('dedupToggle');
+    const btnLoadSample = document.getElementById('btnLoadSample');
+    const btnClearAll = document.getElementById('btnClearAll');
+    const btnCopyReport = document.getElementById('btnCopyReport');
+    const copyBtnText = document.getElementById('copyBtnText');
+
+    // Stats DOM
+    const statFloorTime = document.getElementById('statFloorTime');
+    const statFloorSub = document.getElementById('statFloorSub');
+    const statOutTime = document.getElementById('statOutTime');
+    const statOutSub = document.getElementById('statOutSub');
+    const statLunchTime = document.getElementById('statLunchTime');
+    const statLunchSub = document.getElementById('statLunchSub');
+    const statNetOutTime = document.getElementById('statNetOutTime');
+    const statNetOutSub = document.getElementById('statNetOutSub');
+    const statTotalSpan = document.getElementById('statTotalSpan');
+    const statSpanRange = document.getElementById('statSpanRange');
+    const statPunchCount = document.getElementById('statPunchCount');
+    const ratioFloorText = document.getElementById('ratioFloorText');
+    const ratioOutText = document.getElementById('ratioOutText');
+    const barFloor = document.getElementById('barFloor');
+    const barOut = document.getElementById('barOut');
+    const intervalsTableBody = document.getElementById('intervalsTableBody');
+    const intervalsBadge = document.getElementById('intervalsBadge');
+
+    // Navigation Tabs DOM
+    const navTabFloor = document.getElementById('navTabFloor');
+    const navTabAvg = document.getElementById('navTabAvg');
+    const sectionFloorTracker = document.getElementById('sectionFloorTracker');
+    const sectionAvgTracker = document.getElementById('sectionAvgTracker');
+
+    // Average Tracker DOM
+    const inputTargetHours = document.getElementById('inputTargetHours');
+    const inputTargetMinutes = document.getElementById('inputTargetMinutes');
+    const rawDaysText = document.getElementById('rawDaysText');
+    const btnLoadAvgSample = document.getElementById('btnLoadAvgSample');
+    const btnCopyAvgReport = document.getElementById('btnCopyAvgReport');
+    const copyAvgBtnText = document.getElementById('copyAvgBtnText');
+    const btnPresetTargetList = document.querySelectorAll('.btn-preset-target');
+
+    // Average Tracker Stats DOM
+    const statAvgDaysCount = document.getElementById('statAvgDaysCount');
+    const statAvgTotalHours = document.getElementById('statAvgTotalHours');
+    const statActualAvg = document.getElementById('statActualAvg');
+    const statActualAvgSub = document.getElementById('statActualAvgSub');
+    const statTargetDisplay = document.getElementById('statTargetDisplay');
+    const cardGapStatus = document.getElementById('cardGapStatus');
+    const lblGapTitle = document.getElementById('lblGapTitle');
+    const statGapHours = document.getElementById('statGapHours');
+    const statGapSub = document.getElementById('statGapSub');
+    const statNextDayNeed = document.getElementById('statNextDayNeed');
+    const statNextDaySub = document.getElementById('statNextDaySub');
+    const statAvgPctText = document.getElementById('statAvgPctText');
+    const statStatusBadge = document.getElementById('statStatusBadge');
+    const barAvgProgress = document.getElementById('barAvgProgress');
+    const badgeDaysLogged = document.getElementById('badgeDaysLogged');
+    const avgTableBody = document.getElementById('avgTableBody');
+
+    // Show toast message
+    function showToast(msg) {
+      const toast = document.getElementById('toastNotification');
+      const toastMsg = document.getElementById('toastMsg');
+      toastMsg.innerText = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 2500);
+    }
+
+    // Time Parsing Helper: Supports "12:30 PM", "12:30", "14:15", "02:11 pm" etc.
+    function parseTimeToMinutes(str) {
+      if (!str) return null;
+      const clean = str.trim().toUpperCase();
+      // Regex for hh:mm (with optional AM/PM)
+      const match = clean.match(/(\d{1,2})[:.](\d{2})\s*(AM|PM)?/i);
+      if (!match) return null;
+
+      let hours = parseInt(match[1], 10);
+      const minutes = parseInt(match[2], 10);
+      const meridian = match[3] ? match[3].toUpperCase() : null;
+
+      if (meridian === 'PM' && hours < 12) hours += 12;
+      if (meridian === 'AM' && hours === 12) hours = 0;
+
+      // Handle raw 24-hr format without AM/PM
+      if (!meridian && hours > 23) return null;
+      if (minutes > 59) return null;
+
+      const totalMinutes = (hours * 60) + minutes;
+      return {
+        totalMinutes,
+        formatted: formatMinutesTo12Hr(totalMinutes)
+      };
+    }
+
+    function formatMinutesTo12Hr(totalMinutes) {
+      let hours = Math.floor(totalMinutes / 60) % 24;
+      const mins = totalMinutes % 60;
+      const meridian = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      if (hours === 0) hours = 12;
+      const hStr = hours < 10 ? '0' + hours : '' + hours;
+      const mStr = mins < 10 ? '0' + mins : '' + mins;
+      return `${hStr}:${mStr} ${meridian}`;
+    }
+
+    function formatDuration(minutes) {
+      const hrs = Math.floor(minutes / 60);
+      const rem = minutes % 60;
+      if (hrs === 0) return `${rem}m`;
+      return `${hrs}h ${rem}m`;
+    }
+
+    // Parse free-form duration string like "7h 21m", "8h", "5:35", "7.5h", "45m" into total minutes
+    function parseDurationStringToMinutes(str) {
+      if (!str) return null;
+      const clean = str.trim().toLowerCase();
+
+      // Case 1: "7h 21m", "7h21m", "7 hours 21 mins", "8h", "45m"
+      const hMatch = clean.match(/(\d+(?:\.\d+)?)\s*(?:h|hr|hours?)\b/i);
+      const mMatch = clean.match(/(\d+)\s*(?:m|min|minutes?)\b/i);
+
+      if (hMatch || mMatch) {
+        let mins = 0;
+        if (hMatch) {
+          const hVal = parseFloat(hMatch[1]);
+          mins += Math.round(hVal * 60);
+        }
+        if (mMatch) {
+          mins += parseInt(mMatch[1], 10);
+        }
+        return mins > 0 ? mins : null;
+      }
+
+      // Case 2: Colon notation "07:21" or "7:21"
+      const colonMatch = clean.match(/\b(\d{1,2}):(\d{2})\b/);
+      if (colonMatch) {
+        const h = parseInt(colonMatch[1], 10);
+        const m = parseInt(colonMatch[2], 10);
+        return (h * 60) + m;
+      }
+
+      // Case 3: Just a decimal number representing hours, e.g. "7.5"
+      const numMatch = clean.match(/\b(\d+(?:\.\d+)?)\b/);
+      if (numMatch) {
+        const val = parseFloat(numMatch[1]);
+        if (!isNaN(val) && val > 0 && val <= 24) {
+          return Math.round(val * 60);
+        }
+      }
+
+      return null;
+    }
+
+    // Extract all daily durations from text
+    function extractDailyDurations(text) {
+      if (!text) return [];
+      const lines = text.split('\n');
+      const results = [];
+
+      lines.forEach((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return;
+        const mins = parseDurationStringToMinutes(trimmed);
+        if (mins !== null && mins > 0) {
+          // Check for label like "Day 1" or default to sequential
+          const labelMatch = trimmed.match(/^(day\s*\d+|monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+          const label = labelMatch ? labelMatch[1] : `Day ${results.length + 1}`;
+          results.push({
+            label,
+            minutes: mins
+          });
+        }
+      });
+
+      return results;
+    }
+
+    // Calculate Average Tracker
+    function calculateAverageTracker() {
+      const targetH = Math.max(0, parseInt(inputTargetHours.value, 10) || 0);
+      const targetM = Math.max(0, parseInt(inputTargetMinutes.value, 10) || 0);
+      const targetDailyMinutes = (targetH * 60) + targetM;
+
+      statTargetDisplay.innerText = formatDuration(targetDailyMinutes);
+
+      const days = extractDailyDurations(rawDaysText.value);
+      badgeDaysLogged.innerText = `${days.length} day${days.length === 1 ? '' : 's'}`;
+      statAvgDaysCount.innerText = `${days.length} day${days.length === 1 ? '' : 's'} logged`;
+
+      if (days.length === 0) {
+        statAvgTotalHours.innerText = '0h 0m';
+        statActualAvg.innerText = '0h 0m';
+        statActualAvgSub.innerText = '0 mins/day';
+        lblGapTitle.innerText = 'Hours Short';
+        statGapHours.innerText = '0h 0m';
+        statGapSub.innerText = 'No days entered';
+        statNextDayNeed.innerText = '--';
+        statNextDaySub.innerText = 'To hit target average';
+        statAvgPctText.innerText = '0%';
+        barAvgProgress.style.width = '0%';
+        statStatusBadge.innerText = 'No data';
+        statStatusBadge.className = 'text-[11px] px-2 py-0.5 rounded-full font-medium bg-slate-800 text-slate-400 border border-slate-700';
+        avgTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-slate-500 italic">
+              Paste daily hours on the left to calculate your average.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      // Calculations
+      const totalMinutes = days.reduce((acc, curr) => acc + curr.minutes, 0);
+      const avgMinutes = Math.round(totalMinutes / days.length);
+      const requiredTotalMinutes = targetDailyMinutes * days.length;
+      const netGapMinutes = totalMinutes - requiredTotalMinutes; // positive = surplus, negative = deficit
+
+      statAvgTotalHours.innerText = formatDuration(totalMinutes);
+      statActualAvg.innerText = formatDuration(avgMinutes);
+      statActualAvgSub.innerText = `${avgMinutes} mins/day (${(avgMinutes / 60).toFixed(2)} hrs)`;
+
+      // Target needed on next day (Day N + 1) to bring average back to targetDailyMinutes
+      // Equation: (totalMinutes + nextDayMinutes) / (days.length + 1) = targetDailyMinutes
+      // nextDayMinutes = targetDailyMinutes * (days.length + 1) - totalMinutes
+      const nextDayNeeded = Math.max(0, (targetDailyMinutes * (days.length + 1)) - totalMinutes);
+      statNextDayNeed.innerText = formatDuration(nextDayNeeded);
+      statNextDaySub.innerText = `For Day ${days.length + 1} to reach ${formatDuration(targetDailyMinutes)} avg`;
+
+      // Gap / Shortfall KPI
+      if (netGapMinutes >= 0) {
+        lblGapTitle.innerText = 'Surplus Buffer';
+        lblGapTitle.className = 'text-[11px] font-semibold text-emerald-400 uppercase tracking-wider block';
+        statGapHours.innerText = `+${formatDuration(netGapMinutes)}`;
+        statGapSub.innerText = `Ahead of ${formatDuration(targetDailyMinutes)} target`;
+        statGapSub.className = 'text-[10px] text-emerald-400/80 mt-0.5 block';
+        cardGapStatus.className = 'bg-gradient-to-br from-emerald-950/40 via-slate-900 to-slate-900 border border-emerald-500/30 rounded-2xl p-3.5 relative overflow-hidden';
+      } else {
+        const shortMinutes = Math.abs(netGapMinutes);
+        lblGapTitle.innerText = 'Hours Short';
+        lblGapTitle.className = 'text-[11px] font-semibold text-rose-400 uppercase tracking-wider block';
+        statGapHours.innerText = `-${formatDuration(shortMinutes)}`;
+        statGapSub.innerText = `${shortMinutes} mins cumulative deficit`;
+        statGapSub.className = 'text-[10px] text-rose-400/80 mt-0.5 block';
+        cardGapStatus.className = 'bg-gradient-to-br from-rose-950/40 via-slate-900 to-slate-900 border border-rose-500/30 rounded-2xl p-3.5 relative overflow-hidden';
+      }
+
+      // Percentage achievement
+      const achievementPct = targetDailyMinutes > 0 ? Math.round((avgMinutes / targetDailyMinutes) * 100) : 0;
+      statAvgPctText.innerText = `${achievementPct}%`;
+      barAvgProgress.style.width = `${Math.min(100, achievementPct)}%`;
+
+      if (achievementPct >= 100) {
+        barAvgProgress.className = 'h-full bg-emerald-500 transition-all duration-300';
+        statStatusBadge.innerText = 'Target Met / Ahead';
+        statStatusBadge.className = 'text-[11px] px-2 py-0.5 rounded-full font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      } else {
+        barAvgProgress.className = 'h-full bg-amber-500 transition-all duration-300';
+        statStatusBadge.innerText = 'Below Target';
+        statStatusBadge.className = 'text-[11px] px-2 py-0.5 rounded-full font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20';
+      }
+
+      // Render Table
+      let tableHtml = '';
+      days.forEach((day, index) => {
+        const diff = day.minutes - targetDailyMinutes;
+        const isMet = diff >= 0;
+        tableHtml += `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-2 font-mono text-slate-400 font-medium">${day.label || `Day ${index + 1}`}</td>
+            <td class="py-2.5 px-2 font-mono font-semibold text-white">${formatDuration(day.minutes)}</td>
+            <td class="py-2.5 px-2">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                isMet
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+              }">
+                <span class="w-1.5 h-1.5 rounded-full ${isMet ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+                ${isMet ? 'TARGET MET' : 'DEFICIT'}
+              </span>
+            </td>
+            <td class="py-2.5 px-2 text-right font-mono font-medium ${isMet ? 'text-emerald-400' : 'text-rose-400'}">
+              ${diff >= 0 ? '+' : '-'}${formatDuration(Math.abs(diff))}
+            </td>
+          </tr>
+        `;
+      });
+      avgTableBody.innerHTML = tableHtml;
+    }
+
+    // Extract all valid punch times from user text
+    function extractPunchesFromText(text) {
+      if (!text) return [];
+      // Look for all instances of time patterns
+      const regex = /\b(\d{1,2}[:.]\d{2}(?:\s*(?:AM|PM))?)\b/gi;
+      const matches = text.match(regex);
+      if (!matches) return [];
+
+      const list = [];
+      matches.forEach(item => {
+        const parsed = parseTimeToMinutes(item);
+        if (parsed) list.push(parsed);
+      });
+
+      // Sort chronologically
+      list.sort((a, b) => a.totalMinutes - b.totalMinutes);
+
+      // Debounce & deduplicate
+      const dedup = dedupToggle.checked;
+      const unique = [];
+      for (let i = 0; i < list.length; i++) {
+        if (unique.length === 0) {
+          unique.push(list[i]);
+        } else {
+          const last = unique[unique.length - 1];
+          const diff = list[i].totalMinutes - last.totalMinutes;
+          if (dedup) {
+            // Ignore if same minute or consecutive swipe within 1 minute
+            if (diff >= 1) {
+              unique.push(list[i]);
+            }
+          } else {
+            // Only ignore exact same minute
+            if (diff > 0) {
+              unique.push(list[i]);
+            }
+          }
+        }
+      }
+      return unique;
+    }
+
+    // Calculation Engine
+    function calculate() {
+      let punches = [];
+
+      if (currentInputMode === 'paste') {
+        punches = extractPunchesFromText(rawText.value);
+      } else {
+        // Collect from manual rows
+        const inputs = punchRowsContainer.querySelectorAll('.manual-time-input');
+        const rawList = [];
+        inputs.forEach(input => {
+          if (input.value) {
+            const p = parseTimeToMinutes(input.value);
+            if (p) rawList.push(p);
+          }
+        });
+        rawList.sort((a, b) => a.totalMinutes - b.totalMinutes);
+
+        // Deduplicate
+        const dedup = dedupToggle.checked;
+        for (let i = 0; i < rawList.length; i++) {
+          if (punches.length === 0) {
+            punches.push(rawList[i]);
+          } else {
+            const diff = rawList[i].totalMinutes - punches[punches.length - 1].totalMinutes;
+            if (dedup ? diff >= 1 : diff > 0) {
+              punches.push(rawList[i]);
+            }
+          }
+        }
+      }
+
+      parsedTimes = punches;
+      renderResults(punches);
+    }
+
+    // Render Stats & Intervals
+    function renderResults(punches) {
+      statPunchCount.innerText = punches.length;
+
+      const lunchMinutesInput = Math.max(0, parseInt(inputLunchMinutes.value, 10) || 0);
+
+      if (punches.length < 2) {
+        statFloorTime.innerText = '0h 0m';
+        statFloorSub.innerText = '0 minutes';
+        statOutTime.innerText = '0h 0m';
+        statOutSub.innerText = '0 minutes';
+        statLunchTime.innerText = `${lunchMinutesInput}m`;
+        statLunchSub.innerText = 'Meal allowance';
+        statNetOutTime.innerText = '0h 0m';
+        statNetOutSub.innerText = 'Excl. lunch';
+        statTotalSpan.innerText = '0h 0m';
+        statSpanRange.innerText = punches.length === 1 ? `Only 1 punch (${punches[0].formatted})` : '-- to --';
+        ratioFloorText.innerText = '0%';
+        ratioOutText.innerText = '0%';
+        barFloor.style.width = '0%';
+        barOut.style.width = '0%';
+        intervalsBadge.innerText = '0 intervals';
+        intervalsTableBody.innerHTML = `
+          <tr>
+            <td colspan="4" class="py-8 text-center text-slate-500 italic">
+              ${punches.length === 0 ? 'No timestamps found. Paste or add at least two punches.' : 'Add at least 2 consecutive punches to form intervals.'}
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      const firstPunch = punches[0];
+      const lastPunch = punches[punches.length - 1];
+      const totalSpanMinutes = lastPunch.totalMinutes - firstPunch.totalMinutes;
+
+      statTotalSpan.innerText = formatDuration(totalSpanMinutes);
+      statSpanRange.innerText = `${firstPunch.formatted} → ${lastPunch.formatted}`;
+
+      let floorMinutes = 0;
+      let grossOutMinutes = 0;
+      const intervals = [];
+
+      let currentStatus = firstPunchType; // 'IN' (Floor) or 'OUT' (Break)
+
+      for (let i = 0; i < punches.length - 1; i++) {
+        const from = punches[i];
+        const to = punches[i + 1];
+        const duration = to.totalMinutes - from.totalMinutes;
+        const isOnFloor = (currentStatus === 'IN');
+
+        if (isOnFloor) {
+          floorMinutes += duration;
+        } else {
+          grossOutMinutes += duration;
+        }
+
+        intervals.push({
+          index: i + 1,
+          from: from.formatted,
+          to: to.formatted,
+          duration,
+          isOnFloor
+        });
+
+        // Alternating toggle for subsequent intervals
+        currentStatus = isOnFloor ? 'OUT' : 'IN';
+      }
+
+      // Calculate Lunch deduction & Net Out Time
+      const effectiveLunch = Math.min(lunchMinutesInput, grossOutMinutes);
+      const netOutMinutes = Math.max(0, grossOutMinutes - effectiveLunch);
+
+      // Update KPI Cards
+      statFloorTime.innerText = formatDuration(floorMinutes);
+      statFloorSub.innerText = `${floorMinutes} minutes total`;
+
+      statOutTime.innerText = formatDuration(grossOutMinutes);
+      statOutSub.innerText = `${grossOutMinutes}m gross out`;
+
+      statLunchTime.innerText = `${effectiveLunch}m`;
+      statLunchSub.innerText = lunchMinutesInput > grossOutMinutes 
+        ? `Capped at max out (${grossOutMinutes}m)` 
+        : `Deducted from out`;
+
+      statNetOutTime.innerText = formatDuration(netOutMinutes);
+      statNetOutSub.innerText = `${netOutMinutes}m other breaks`;
+
+      // Ratio Progress Bar
+      const floorPct = totalSpanMinutes > 0 ? Math.round((floorMinutes / totalSpanMinutes) * 100) : 0;
+      const outPct = 100 - floorPct;
+
+      ratioFloorText.innerText = `${floorPct}% (${formatDuration(floorMinutes)})`;
+      ratioOutText.innerText = `${outPct}% (${formatDuration(grossOutMinutes)})`;
+      barFloor.style.width = `${floorPct}%`;
+      barOut.style.width = `${outPct}%`;
+
+      // Render Table Rows
+      intervalsBadge.innerText = `${intervals.length} interval${intervals.length > 1 ? 's' : ''}`;
+      let html = '';
+      intervals.forEach(int => {
+        html += `
+          <tr class="hover:bg-slate-800/40 transition">
+            <td class="py-2.5 px-2 font-mono text-slate-500">${int.index}</td>
+            <td class="py-2.5 px-2">
+              <span class="font-mono text-slate-200">${int.from}</span>
+              <span class="text-slate-600 mx-1">→</span>
+              <span class="font-mono text-slate-200">${int.to}</span>
+            </td>
+            <td class="py-2.5 px-2">
+              <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold ${
+                int.isOnFloor
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+              }">
+                <span class="w-1.5 h-1.5 rounded-full ${int.isOnFloor ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
+                ${int.isOnFloor ? 'ON FLOOR' : 'BREAK / OUT'}
+              </span>
+            </td>
+            <td class="py-2.5 px-2 text-right font-mono font-medium ${int.isOnFloor ? 'text-emerald-400' : 'text-rose-400'}">
+              +${formatDuration(int.duration)}
+            </td>
+          </tr>
+        `;
+      });
+
+      intervalsTableBody.innerHTML = html;
+    }
+
+    // Interactive Row List Management
+    function createManualRow(timeValue = '') {
+      const row = document.createElement('div');
+      row.className = 'flex items-center gap-2 bg-slate-950 p-2 rounded-xl border border-slate-800 group';
+      row.innerHTML = `
+        <div class="w-2 h-2 rounded-full bg-slate-600 group-hover:bg-emerald-400 transition ml-1"></div>
+        <input type="text" value="${timeValue}" placeholder="e.g. 12:30 PM" class="manual-time-input flex-1 bg-transparent border-0 text-xs font-mono text-slate-200 focus:outline-none focus:ring-0 placeholder-slate-600">
+        <button type="button" class="btn-remove-row text-slate-500 hover:text-rose-400 p-1 transition" title="Delete row">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      `;
+
+      // Input listener
+      const input = row.querySelector('.manual-time-input');
+      input.addEventListener('input', calculate);
+
+      // Remove listener
+      const btnRemove = row.querySelector('.btn-remove-row');
+      btnRemove.addEventListener('click', () => {
+        row.remove();
+        calculate();
+      });
+
+      return row;
+    }
+
+    function populateManualRowsFromList(times) {
+      punchRowsContainer.innerHTML = '';
+      if (!times || times.length === 0) {
+        punchRowsContainer.appendChild(createManualRow('12:30 PM'));
+        punchRowsContainer.appendChild(createManualRow('12:36 PM'));
+      } else {
+        times.forEach(t => punchRowsContainer.appendChild(createManualRow(t)));
+      }
+    }
+
+    // First Punch Switcher
+    btnFirstIn.addEventListener('click', () => {
+      firstPunchType = 'IN';
+      btnFirstIn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-emerald-500/15 border-emerald-500/50 text-emerald-300 shadow-sm';
+      btnFirstOut.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300 hover:border-slate-700';
+      calculate();
+    });
+
+    btnFirstOut.addEventListener('click', () => {
+      firstPunchType = 'OUT';
+      btnFirstOut.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-rose-500/15 border-rose-500/50 text-rose-300 shadow-sm';
+      btnFirstIn.className = 'px-3 py-2 rounded-xl text-xs font-semibold border transition text-left flex flex-col justify-between bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-300 hover:border-slate-700';
+      calculate();
+    });
+
+    // Navigation Switcher (Floor Tracker vs Average Tracker)
+    navTabFloor.addEventListener('click', () => {
+      navTabFloor.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-500 text-slate-950 shadow-sm flex items-center gap-1.5';
+      navTabAvg.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
+      sectionFloorTracker.classList.remove('hidden');
+      sectionAvgTracker.classList.add('hidden');
+    });
+
+    navTabAvg.addEventListener('click', () => {
+      navTabAvg.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-500 text-slate-950 shadow-sm flex items-center gap-1.5';
+      navTabFloor.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-slate-200 flex items-center gap-1.5';
+      sectionAvgTracker.classList.remove('hidden');
+      sectionFloorTracker.classList.add('hidden');
+      calculateAverageTracker();
+    });
+
+    // Average Tracker Listeners
+    rawDaysText.addEventListener('input', calculateAverageTracker);
+    inputTargetHours.addEventListener('input', calculateAverageTracker);
+    inputTargetMinutes.addEventListener('input', calculateAverageTracker);
+
+    // Preset Target Buttons
+    btnPresetTargetList.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const h = btn.getAttribute('data-h');
+        const m = btn.getAttribute('data-m');
+        inputTargetHours.value = h;
+        inputTargetMinutes.value = m;
+        calculateAverageTracker();
+        showToast(`Target set to ${h}h ${m}m / day`);
+      });
+    });
+
+    // Load User's 3-Day Sample
+    btnLoadAvgSample.addEventListener('click', () => {
+      rawDaysText.value = "Day 1: 7h 21m\nDay 2: 8h\nDay 3: 5h 35m";
+      inputTargetHours.value = 8;
+      inputTargetMinutes.value = 0;
+      calculateAverageTracker();
+      showToast('Loaded 3-day sample (7h 21m, 8h, 5h 35m)!');
+    });
+
+    // Copy Average Report Summary
+    btnCopyAvgReport.addEventListener('click', () => {
+      const days = extractDailyDurations(rawDaysText.value);
+      if (days.length === 0) {
+        showToast('No days entered to copy');
+        return;
+      }
+
+      let summary = `Floor Hours Average Report:\n`;
+      summary += `Days Count: ${days.length}\n`;
+      summary += `Target Daily Average: ${statTargetDisplay.innerText}\n`;
+      summary += `Actual Daily Average: ${statActualAvg.innerText}\n`;
+      summary += `Total Floor Hours: ${statAvgTotalHours.innerText}\n`;
+      summary += `Status: ${lblGapTitle.innerText} = ${statGapHours.innerText}\n`;
+      summary += `Requirement for Day ${days.length + 1}: ${statNextDayNeed.innerText}\n\n`;
+      summary += `Day-by-Day Log:\n`;
+
+      days.forEach(d => {
+        summary += `• ${d.label}: ${formatDuration(d.minutes)}\n`;
+      });
+
+      try {
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = summary;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+
+        copyAvgBtnText.innerText = 'Copied Summary!';
+        showToast('Average report copied!');
+        setTimeout(() => {
+          copyAvgBtnText.innerText = 'Copy Average Summary';
+        }, 2000);
+      } catch (err) {
+        showToast('Could not copy directly');
+      }
+    });
+
+    // Tab Switcher
+    tabPaste.addEventListener('click', () => {
+      currentInputMode = 'paste';
+      tabPaste.className = 'px-3 py-1 rounded-md font-medium transition bg-slate-800 text-white shadow-sm';
+      tabManual.className = 'px-3 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200';
+      viewPaste.classList.remove('hidden');
+      viewManual.classList.add('hidden');
+      calculate();
+    });
+
+    tabManual.addEventListener('click', () => {
+      currentInputMode = 'manual';
+      tabManual.className = 'px-3 py-1 rounded-md font-medium transition bg-slate-800 text-white shadow-sm';
+      tabPaste.className = 'px-3 py-1 rounded-md font-medium transition text-slate-400 hover:text-slate-200';
+      viewManual.classList.remove('hidden');
+      viewPaste.classList.add('hidden');
+
+      // Sync paste content to manual rows if manual rows are empty
+      if (punchRowsContainer.children.length === 0 && parsedTimes.length > 0) {
+        populateManualRowsFromList(parsedTimes.map(p => p.formatted));
+      }
+      calculate();
+    });
+
+    btnAddManualRow.addEventListener('click', () => {
+      punchRowsContainer.appendChild(createManualRow(''));
+      const inputs = punchRowsContainer.querySelectorAll('.manual-time-input');
+      inputs[inputs.length - 1].focus();
+    });
+
+    // Auto calculate on paste/typing
+    rawText.addEventListener('input', calculate);
+    dedupToggle.addEventListener('change', calculate);
+    inputLunchMinutes.addEventListener('input', calculate);
+
+    // Lunch quick-preset buttons
+    btnPresetLunchList.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mins = btn.getAttribute('data-mins');
+        inputLunchMinutes.value = mins;
+        calculate();
+        showToast(`Set lunch break to ${mins} mins`);
+      });
+    });
+
+    // Preset Sample (User's Exact 4 Punches)
+    btnLoadSample.addEventListener('click', () => {
+      const sample = "12:30 PM\n12:36 PM\n12:42 PM\n02:11 PM";
+      rawText.value = sample;
+      firstPunchType = 'IN';
+      btnFirstIn.click();
+      populateManualRowsFromList(['12:30 PM', '12:36 PM', '12:42 PM', '02:11 PM']);
+      calculate();
+      showToast('Loaded your 4-punch sample!');
+    });
+
+    // Clear
+    btnClearAll.addEventListener('click', () => {
+      rawText.value = '';
+      punchRowsContainer.innerHTML = '';
+      calculate();
+      showToast('Cleared all punches');
+    });
+
+    // Copy Summary Text for Zoho People Regularization Request
+    btnCopyReport.addEventListener('click', () => {
+      if (parsedTimes.length < 2) {
+        showToast('Not enough punches to export');
+        return;
+      }
+
+      const lunchMins = Math.max(0, parseInt(inputLunchMinutes.value, 10) || 0);
+
+      let summaryText = `Zoho Attendance Regularization Summary:\n`;
+      summaryText += `First In: ${parsedTimes[0].formatted}\n`;
+      summaryText += `Last Out: ${parsedTimes[parsedTimes.length - 1].formatted}\n`;
+      summaryText += `Total Span: ${statTotalSpan.innerText}\n`;
+      summaryText += `Total On Floor: ${statFloorTime.innerText}\n`;
+      summaryText += `Gross Out Time: ${statOutTime.innerText}\n`;
+      if (lunchMins > 0) {
+        summaryText += `Lunch Break (Deducted): ${statLunchTime.innerText}\n`;
+        summaryText += `Net Non-Lunch Out Time: ${statNetOutTime.innerText}\n`;
+      }
+      summaryText += `\nPunches Logged:\n`;
+
+      const rows = intervalsTableBody.querySelectorAll('tr');
+      rows.forEach(r => {
+        const text = r.innerText.replace(/\t+/g, ' | ').replace(/\n/g, '');
+        if (text) summaryText += `• ${text}\n`;
+      });
+
+      // Safe clipboard copy
+      try {
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = summaryText;
+        document.body.appendChild(tempTextArea);
+        tempTextArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(tempTextArea);
+
+        copyBtnText.innerText = 'Copied to Clipboard!';
+        showToast('Regularization report copied!');
+        setTimeout(() => {
+          copyBtnText.innerText = 'Copy for Zoho Regularization';
+        }, 2000);
+      } catch (err) {
+        showToast('Could not copy directly');
+      }
+    });
+
+    // Initialize with sample on load
+    window.onload = function() {
+      btnLoadSample.click();
+      // Pre-fill the average sample in the background so it's ready on first click
+      rawDaysText.value = "Day 1: 7h 21m\nDay 2: 8h\nDay 3: 5h 35m";
+      calculateAverageTracker();
+    };
+  </script>
+</body>
+</html>
